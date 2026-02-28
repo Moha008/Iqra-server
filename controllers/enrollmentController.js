@@ -30,32 +30,43 @@ exports.createEnrollment = async (req, res) => {
 };
 // GET /enrollments/check/:studentId/:courseId
 exports.checkEnrollment = async (req, res) => {
-  try {
-    const { studentId, courseId } = req.params;
+try {
+    const studentId = req.user.id;      // from your auth middleware
+    const { courseId } = req.params;
 
-    // 1. We must find an enrollment that matches BOTH user and THIS specific course
-    const existing = await prisma.enrollment.findFirst({
-      where: { 
-        studentId: studentId,
-        courseId: courseId  // <--- If this is missing, it returns ANY enrollment
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        courseId,
+      },
+      select: {
+        id: true,
+        ispay: true,
+        status: true,
+        createdAt: true,
       },
     });
 
-    // 2. If no record exists for THIS specific course, they are not enrolled
-    if (!existing) {
-      return res.json({ enrolled: false, ispay: false });
+    // not enrolled
+    if (!enrollment) {
+      return res.status(200).json({
+        enrolled: false,
+        paid: false,
+        enrollment: null,
+      });
     }
 
-    // 3. Return only the status for this specific course
-    return res.json({ 
-      enrolled: true, 
-      ispay: existing.ispay 
-    });
+    // enrolled (paid or not)
+    return res.status(200).json(enrollment)
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
   }
+
 };
+
+
 exports.getEnrollments = async (req, res) => {
   try {
     const enrollments = await prisma.enrollment.findMany({ include: { student: true, course: true, payment: true } });
