@@ -33,25 +33,29 @@ exports.checkEnrollment = async (req, res) => {
   try {
     const { studentId, courseId } = req.params;
 
+    // 1. We must find an enrollment that matches BOTH user and THIS specific course
     const existing = await prisma.enrollment.findFirst({
-      where: { studentId, courseId },
-      // Selecting specific fields is cleaner, but including everything works too
+      where: { 
+        studentId: studentId,
+        courseId: courseId  // <--- If this is missing, it returns ANY enrollment
+      },
     });
 
+    // 2. If no record exists for THIS specific course, they are not enrolled
     if (!existing) {
       return res.json({ enrolled: false, ispay: false });
     }
 
-    res.json({ 
+    // 3. Return only the status for this specific course
+    return res.json({ 
       enrolled: true, 
-      ispay: existing.ispay // Include the payment status here
+      ispay: existing.ispay 
     });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-
 exports.getEnrollments = async (req, res) => {
   try {
     const enrollments = await prisma.enrollment.findMany({ include: { student: true, course: true, payment: true } });
