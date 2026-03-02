@@ -29,9 +29,45 @@ exports.createEnrollment = async (req, res) => {
   }
 };
 // GET /enrollments/check/:studentId/:courseId
+// exports.checkEnrollment = async (req, res) => {
+// try {
+//     const studentId = req.user.id;      // from your auth middleware
+//     const { courseId } = req.params;
+
+//     const enrollment = await prisma.enrollment.findFirst({
+//       where: {
+//         studentId,
+//         courseId,
+//       },
+//       select: {
+//         id: true,
+//         ispay: true,
+//         status: true,
+//         createdAt: true,
+//       },
+//     });
+
+//     // not enrolled
+//     if (!enrollment) {
+//       return res.status(200).json({
+//         enrolled: false,
+//         paid: false,
+//         enrollment: null,
+//       });
+//     }
+
+//     // enrolled (paid or not)
+//     return res.status(200).json(enrollment)
+
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+
+// };
 exports.checkEnrollment = async (req, res) => {
-try {
-    const studentId = req.user.id;      // from your auth middleware
+  try {
+    const studentId = req.user.id;
     const { courseId } = req.params;
 
     const enrollment = await prisma.enrollment.findFirst({
@@ -47,7 +83,6 @@ try {
       },
     });
 
-    // not enrolled
     if (!enrollment) {
       return res.status(200).json({
         enrolled: false,
@@ -56,14 +91,20 @@ try {
       });
     }
 
-    // enrolled (paid or not)
-    return res.status(200).json(enrollment)
+    const enrolled =
+      enrollment.status === "ENROLLED" ||
+      enrollment.status === "confirmed";
+
+    return res.status(200).json({
+      enrolled,
+      paid: enrollment.ispay,
+      enrollment,
+    });
 
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
   }
-
 };
 
 
