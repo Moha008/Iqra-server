@@ -67,46 +67,37 @@ exports.createEnrollment = async (req, res) => {
 // };
 exports.checkEnrollment = async (req, res) => {
   try {
-    const studentId = req.user.id;
-    const { courseId } = req.params;
+    const { studentId, courseId } = req.params;
+
+    if (!studentId || !courseId) {
+      return res.status(400).json({
+        error: "Missing studentId or courseId",
+      });
+    }
 
     const enrollment = await prisma.enrollment.findFirst({
       where: {
         studentId,
         courseId,
       },
-      select: {
-        id: true,
-        ispay: true,
-        status: true,
-        createdAt: true,
-      },
     });
 
     if (!enrollment) {
       return res.status(200).json({
         enrolled: false,
-        paid: false,
-        enrollment: null,
+        message: "User is not enrolled in this course",
       });
     }
 
-    const enrolled =
-      enrollment.status === "ENROLLED" ||
-      enrollment.status === "confirmed";
-
     return res.status(200).json({
-      enrolled,
-      paid: enrollment.ispay,
+      enrolled: true,
       enrollment,
     });
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.log(error)
   }
 };
-
 
 exports.getEnrollments = async (req, res) => {
   try {
